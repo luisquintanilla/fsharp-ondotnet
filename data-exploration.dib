@@ -1,0 +1,125 @@
+#!fsharp
+
+#r "nuget:Microsoft.DotNet.Interactive.ExtensionLab,*-*"
+
+#!fsharp
+
+#r "nuget:Microsoft.Spark"
+
+#!fsharp
+
+open Microsoft.Spark.Sql;
+
+#!fsharp
+
+let sparkSession = 
+    SparkSession
+        .Builder()
+        .AppName("on-dotnet-fsharp")
+        .GetOrCreate()
+
+#!fsharp
+
+let df = 
+    sparkSession
+        .Read()
+        .Option("header","true")
+        .Option("inferSchema","true")
+        .Csv("data/nyc-restaurant-inspections.csv")
+
+#!fsharp
+
+df.PrintSchema()
+
+#!fsharp
+
+let boroughs = 
+    df.GroupBy([|Functions.Col("BORO")|]).Count()
+
+#!fsharp
+
+boroughs.Show()
+
+#!fsharp
+
+let cleanBoroughs = boroughs.Filter(Functions.Col("BORO").NotEqual("0"))
+
+#!fsharp
+
+cleanBoroughs.Show()
+
+#!fsharp
+
+#r "nuget: Plotly.NET, 2.0.0-preview.5"
+#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.5"
+
+#!fsharp
+
+open Plotly.NET
+
+#!fsharp
+
+let boroughs,counts = 
+    cleanBoroughs
+      .Select("BORO","count")
+      .OrderBy(Functions.Col("count").Desc())
+      .Collect()
+    |> Seq.map(fun row -> (string row.[0], string row.[1] |> int))
+    |> Seq.unzip
+
+#!fsharp
+
+let boroughColumn = Chart.Column(boroughs,counts)
+
+#!fsharp
+
+boroughColumn
+
+#!fsharp
+
+let coordinates = 
+  df
+    .Select(
+      Functions.Col("CAMIS"),Functions.Col("Latitude"),Functions.Col("Longitude"))
+    .DropDuplicates("CAMIS")
+
+#!fsharp
+
+coordinates.Show()
+
+#!fsharp
+
+let nonZeroCoordinates = coordinates.Where("Latitude != 0.0 OR Longitude != 0.0")
+
+#!fsharp
+
+let labels, lat, lon = 
+    nonZeroCoordinates.Select("CAMIS","Latitude","Longitude").Collect()
+    |> Seq.map(fun row -> string row.[0], string row.[1] |> float, string row.[2] |> float)
+    |> Seq.unzip3
+
+#!fsharp
+
+let pointMapbox = 
+    Chart.PointMapbox(
+        lon,lat,
+        Labels = labels,
+        TextPosition = StyleParam.TextPosition.TopCenter
+    )
+    |> Chart.withMapbox(
+        Mapbox.init(
+            Style=StyleParam.MapboxStyle.OpenStreetMap,
+            Center=(-73.99,40.73),
+            Zoom=8.
+        )
+    )
+
+#!fsharp
+
+pointMapbox
+
+#!fsharp
+
+let prepData = 
+    df
+      .Select("CAMIS","INSPECTION DATE", "VIOLATION CODE", "SCORE")
