@@ -1,5 +1,6 @@
 #r "nuget:Microsoft.ML"
 
+open System.IO
 open Microsoft.ML
 open Microsoft.ML.Data
 
@@ -22,7 +23,8 @@ type ModelOutput = {
 
 let ctx = MLContext()
 
-let idv = ctx.Data.LoadFromTextFile<ModelInput>(@"C:\Dev\fsharp-ondotnet\prepdata\*.csv",separatorChar=',', allowQuoting=true, hasHeader=false)
+let dataPath = Path.Join(__SOURCE_DIRECTORY__,"prepdata\*.csv")
+let idv = ctx.Data.LoadFromTextFile<ModelInput>(dataPath,separatorChar=',', allowQuoting=true, hasHeader=false)
 
 let dataSplit = ctx.Data.TrainTestSplit(idv, samplingKeyColumnName="Camis")
 
