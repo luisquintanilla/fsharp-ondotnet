@@ -34,13 +34,23 @@ The dataset represents the NYC restaurant inspection results. For more informati
 
 ### Prepare data
 
-.NET for Apache Spark is used to prepare the raw data for training. To prep data, use the .NET CLI and F# Interactive to run *data.fsx*.
+.NET for Apache Spark is used to prepare the raw data for training. To prep data, start Apache Spark.
 
-```dotnetcli
-dotnet fsi data.fsx
-```
+1. Start Apache Spark in debug mode. **Note that this is a script for the Windows CMD prompt. You might need to modify the `^` characters a bit to work on PowerShell `` ` `` or Linux `\`.**
+
+    ```console
+    submit.cmd
+    ```
+
+2. Use .NET CLI and F# Interactive to run *data.fsx*.
+
+    ```dotnetcli
+    dotnet fsi data.fsx
+    ```
 
 This will prepare the data, create an output directory *prepdata* for the results, and save the results to *.csv* files.
+
+**Remember to stop Apache Spark once *data.fsx* is done preparing the data. `Ctrl + C`**
 
 ### Train model
 
